@@ -1,0 +1,138 @@
+/*#define F_CPU 8000000U
+#include<avr/io.h>
+#include<util/delay.h>
+#include<avr/interrupt.h>
+#include "ADC/ADC.h"
+#include <stdlib.h>
+
+void requestEvent() ; 
+const float IN_STRAY_CAP_TO_GND = 24.48;
+const float IN_CAP_TO_GND  = 24.48;
+const int MAX_ADC_VALUE = 1023;
+float Setpoint = 8.50f ;
+float MaxPoint = 23;
+uint8_t percentage = 0 ; 
+
+int main()
+{
+	ADC_init(CH0,AVCC,INT_DISABLED,PRESCALER128);
+	twi_init();
+	twi_setAddress(0x09);			// set the address as 0x09 
+	DDRB |= (1U<<0);  
+	DDRC |= (1U<<2);
+	uint16_t val = 0 ; 
+	twi_attachSlaveRxEvent(&requestEvent); 
+	char snum[5];
+	
+	while(1) {
+			PORTC |= (1U<<2); 
+			val =ADC_read(CH0); 
+			PORTC &= ~(1U<<2); 
+			if((val <1000) && (val >0))
+			{
+				PORTB |= (1U<<0); 
+				float capacitance = (float)val * IN_CAP_TO_GND / (float)(MAX_ADC_VALUE - val);
+				percentage =((capacitance-Setpoint)/MaxPoint)*100 ;
+				itoa(capacitance, snum, 10);
+			
+			}
+			else
+				PORTB &= ~(1U<<0); 
+
+		}      
+		 //Don't let the program to end
+
+}
+
+void USARTinit(unsigned short speed)
+{
+	UBRR0 = speed;
+	UCSR0B = 3<<TXEN0;
+	UCSR0C = 3<<UCSZ00;
+}
+void USARTtransmit(char ch)
+{
+	while(((UCSR0A>>UDRE0)&1)==0);
+	UDR0=ch;
+}
+unsigned char USARTreceive(void)
+{
+	while (((UCSR0A >> RXC0) & 1) == 0);
+	return UDR0;
+}
+void requestEvent() {
+	twi_transmit(&percentage,1);
+}
+*/
+#define F_CPU 16000000U
+#include <avr/io.h>
+#include <stdio.h>
+#include "I2C/twi.h"
+#include "UART/uart.h"
+
+
+
+void init(void);
+
+int main(void)
+{
+	uint8_t address;
+	
+	
+	
+	init();
+	
+	printf("Scanning ...\n");
+	for(address=1; address<=127; address++)
+	{
+		twi_start();
+		if(!twi_addressWrite(address))  //slave detected when ACK is returned
+		printf("0x%02X\n", address);
+		twi_stop();
+	}
+	printf("Done!\n");
+	
+	while(1)
+	{
+	}
+}
+
+void init(void)
+{
+	uart_init();
+	twi_init();
+}
+
+
+/*
+
+
+#include <stdio.h>
+#include "uart.h"
+
+
+
+void init(void);
+
+int main(void)
+{
+	#define MAX_LENGTH 80
+	char s[MAX_LENGTH];
+	
+	
+	
+	init();
+	
+	while(1)
+	{
+		fgets(s, MAX_LENGTH, stdin);
+		fputs(s, stdout);
+	}
+}
+
+void init(void)
+{
+	uart_init();
+}
+
+*/
